@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Deep Learning DNA Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 保持原有的深色极简风格 */
+    .notification {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: linear-gradient(135deg, #10b981, #059669); /* 改为绿色系表示成功 */
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 9999;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modal-content {
+      background: #2e2e2e;
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      color: white;
+      max-width: 300px;
+    }
+    /* 针对结果标签的样式 */
+    .badge-pos {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #10b981;
+    }
+    .badge-neg {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ef4444;
+    }
+  </style>
+</head>
+
+<body class="bg-[#0f0f0f] text-white font-sans min-h-screen flex flex-col">
+
+<nav class="bg-[#1a1a1a] shadow-lg">
+  <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+    <div class="text-2xl font-bold flex items-center gap-2">
+      <span class="text-purple-500">TriAlignNet-4mC Server</span>
+      <span class="text-sm text-gray-400 ml-2 border-l border-gray-600 pl-2">Mouse DNA N4-methylcytosine Prediction</span>
+    </div>
+    <div class="text-sm opacity-70">Multi-Branch Fusion: BERT Context + DNA Graph + BioFeatures</div>
+  </div>
+</nav>
+
+<main class="flex-1 container mx-auto px-6 py-10 flex flex-wrap gap-8">
+
+  <div class="flex-1 min-w-[60%]">
+
+    <section class="bg-[#1e1e1e] rounded-2xl p-8 shadow-md mb-8">
+      <h2 class="text-2xl font-semibold mb-6">Sequence Input</h2>
+
+     <div class="bg-gray-800 p-4 rounded-lg mb-6 border-l-4 border-purple-500 text-sm text-gray-300">
+  <h4 class="font-bold text-purple-400 mb-1">Input Guidelines:</h4>
+  <ul class="list-disc list-inside space-y-1">
+    <li>
+      <strong>Target Format:</strong> Please input DNA sequences of length <strong>41 bp</strong> with the target Cytosine (C) centered at <strong>position 21</strong>.
+    </li>
+    <li>
+      <strong>Automatic Processing:</strong> The server supports variable lengths. Sequences shorter than 41bp will be padded, and longer sequences will be truncated from the center.
+    </li>
+    <li>
+      <strong>Species Specificity:</strong> This model is trained on the <em>Mus musculus</em> genome. Results on other species should be interpreted with caution.
+    </li>
+  </ul>
+</div>
+
+      <label for="sequence" class="block text-sm mb-2 text-gray-400">DNA Sequence (A, T, C, G, N)</label>
+      <div class="mb-6 relative">
+        <textarea id="sequence" rows="2" class="w-full rounded-lg p-3 pr-12 bg-[#2a2a2a] border border-gray-700 focus:ring-2 focus:ring-purple-500 font-mono text-lg" placeholder="e.g. ATCGGCTAAGCTTAGCTAGCTAGCTAGCTAGCT..."></textarea>
+        
+        <button onclick="clearInput()" class="absolute right-3 top-3" title="Clear">
+          <svg class="h-5 w-5 text-gray-400 hover:text-white" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <path d="M512 883.2A371.2 371.2 0 1 0 140.8 512 371.2 371.2 0 0 0 512 883.2z m0 64a435.2 435.2 0 1 1 435.2-435.2 435.2 435.2 0 0 1-435.2 435.2z" fill="#5A5A68"></path>
+            <path d="M557.056 512l122.368 122.368a31.744 31.744 0 1 1-45.056 45.056L512 557.056l-122.368 122.368a31.744 31.744 0 1 1-45.056-45.056L466.944 512 344.576 389.632a31.744 31.744 0 1 1 45.056-45.056L512 466.944l122.368-122.368a31.744 31.744 0 1 1 45.056 45.056z" fill="#5A5A68"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex gap-4">
+        <button onclick="submitData()" class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 py-3 rounded-xl font-bold text-lg transition-transform transform active:scale-95 shadow-lg">
+          Run Prediction
+        </button>
+        <button onclick="clearTable()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-xl font-bold text-lg transition-colors">
+          Clear History
+        </button>
+      </div>
+
+      <div id="loading" class="hidden mt-6 flex justify-center items-center gap-3">
+        <div class="animate-spin rounded-full h-8 w-8 border-t-4 border-purple-500"></div>
+        <span class="text-purple-400 font-semibold animate-pulse">Processing Model...</span>
+      </div>
+    </section>
+
+    <section class="bg-[#1e1e1e] rounded-2xl p-8 shadow-md">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">Prediction History</h2>
+        <span class="text-xs text-gray-500" id="thresholdDisplay">Threshold: Loading...</span>
+      </div>
+      
+      <div class="overflow-x-auto max-h-[400px] overflow-y-auto custom-scrollbar">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-[#2a2a2a] text-gray-400 uppercase sticky top-0">
+            <tr>
+              <th class="px-6 py-3">Sequence (Preview)</th>
+              <th class="px-6 py-3 text-center">Length</th>
+              <th class="px-6 py-3 text-center">Result</th>
+            </tr>
+          </thead>
+          <tbody id="resultTable" class="text-gray-200 divide-y divide-gray-700">
+            </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="flex-1 min-w-[30%] bg-[#1e1e1e] rounded-2xl p-8 shadow-md flex flex-col h-fit">
+    <h2 class="text-2xl font-semibold mb-2">Statistics</h2>
+    <p class="text-sm text-gray-400 mb-6">Distribution of Positive (1) vs Negative (0) predictions in this session.</p>
+    
+    <div class="relative h-64 w-full flex justify-center">
+        <canvas id="statsChart"></canvas>
+    </div>
+
+    <div class="mt-8 grid grid-cols-2 gap-4 text-center">
+        <div class="bg-[#2a2a2a] p-4 rounded-xl border-b-4 border-emerald-500">
+            <div class="text-3xl font-bold text-white" id="countPos">0</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Positive</div>
+        </div>
+        <div class="bg-[#2a2a2a] p-4 rounded-xl border-b-4 border-red-500">
+            <div class="text-3xl font-bold text-white" id="countNeg">0</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Negative</div>
+        </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="notification" class="notification"></div>
+
+<div id="errorModal" class="modal">
+  <div class="modal-content border border-red-500/50 shadow-red-500/20 shadow-2xl">
+    <div class="text-red-500 text-5xl mb-4">⚠️</div>
+    <h3 class="text-xl font-bold mb-2">Error</h3>
+    <p id="errorText" class="mb-6 text-gray-300"></p>
+    <button onclick="closeError()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-bold transition-colors">Close</button>
+  </div>
+</div>
+
+<script>
+// --- 全局变量 ---
+let predictionStats = { positive: 0, negative: 0 };
+let myChart = null;
+
+// --- 初始化图表 (Doughnut Chart) ---
+function initChart() {
+    const ctx = document.getElementById('statsChart').getContext('2d');
+    
+    myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive', 'Negative'],
+            datasets: [{
+                data: [0, 0],
+                backgroundColor: [
+                    '#10b981', // Emerald 500 (Green)
+                    '#ef4444'  // Red 500
+                ],
+                borderColor: '#1e1e1e',
+                borderWidth: 4,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { 
+                    position: 'bottom',
+                    labels: { color: '#fff', usePointStyle: true, padding: 20 }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 16 },
+                    formatter: (value, ctx) => {
+                        if (value === 0) return '';
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        let percentage = (value * 100 / sum).toFixed(0) + "%";
+                        return percentage;
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+// 页面加载完成后初始化
+window.onload = function() {
+    initChart();
+    // 检查API连接
+    checkApiConnection();
+};
+
+function checkApiConnection() {
+    axios.get('http://127.0.0.1:12345/test_connection')
+        .then(() => console.log("API Connected"))
+        .catch(() => showNotification("Warning: API seems offline", true));
+}
+
+// --- 提交预测 ---
+function submitData() {
+    const sequenceInput = document.getElementById('sequence');
+    const sequence = sequenceInput.value.trim().toUpperCase();
+
+    // 基础校验
+    if (sequence === "") { 
+        showError("Please enter a DNA sequence."); 
+        return; 
+    }
+    // 简单的DNA字符校验
+    const validChars = /^[ATCGN\s]+$/;
+    if (!validChars.test(sequence)) {
+        showError("Invalid characters detected. Only A, T, C, G, N are allowed.");
+        return;
+    }
+
+    // UI Loading 状态
+    document.getElementById('loading').classList.remove('hidden');
+    
+    // 发送请求
+    axios.post('http://127.0.0.1:12345/predict', { sequence: sequence.replace(/\s/g, '') })
+        .then(response => {
+            const data = response.data;
+            
+            // 更新表格
+            addResultRow(sequence, data);
+            
+            // 更新统计
+            if (data.prediction === 1) {
+                predictionStats.positive++;
+            } else {
+                predictionStats.negative++;
+            }
+            updateChartAndStats();
+            
+            // 更新阈值显示 (从后端返回的信息中获取)
+            if(data.used_threshold) {
+                document.getElementById('thresholdDisplay').innerText = `Current Threshold: ${data.used_threshold}`;
+            }
+
+            showNotification("Prediction Complete!");
+        })
+        .catch(error => {
+            console.error(error);
+            const msg = error.response?.data?.error || "Connection refused or server error.";
+            showError("Prediction failed: " + msg);
+        })
+        .finally(() => {
+            document.getElementById('loading').classList.add('hidden');
+        });
+}
+
+// --- 更新表格 ---
+function addResultRow(sequence, data) {
+    const table = document.getElementById('resultTable');
+    const newRow = table.insertRow(0); // 插入到第一行
+    newRow.className = 'hover:bg-[#2e2e2e] transition-all animate-fade-in border-b border-gray-700';
+    
+    const cellSeq = newRow.insertCell(0);
+    const cellLen = newRow.insertCell(1);
+    const cellRes = newRow.insertCell(2);
+
+    cellSeq.className = "px-6 py-4 font-mono text-gray-300 truncate max-w-xs";
+    cellLen.className = "px-6 py-4 text-center text-gray-400";
+    cellRes.className = "px-6 py-4 text-center";
+
+    // 格式化序列显示 (只显示前20个字符...)
+    cellSeq.innerText = sequence.length > 20 ? sequence.substring(0, 20) + "..." : sequence;
+    cellSeq.title = sequence; // 鼠标悬停显示全称
+    
+    cellLen.innerText = data.sequence_length;
+
+    // 结果徽章
+    if (data.prediction === 1) {
+        cellRes.innerHTML = `<span class="badge-pos">Positive (1)</span>`;
+    } else {
+        cellRes.innerHTML = `<span class="badge-neg">Negative (0)</span>`;
+    }
+}
+
+// --- 更新图表和数字 ---
+function updateChartAndStats() {
+    // 更新数字
+    document.getElementById('countPos').innerText = predictionStats.positive;
+    document.getElementById('countNeg').innerText = predictionStats.negative;
+
+    // 更新图表数据
+    myChart.data.datasets[0].data = [predictionStats.positive, predictionStats.negative];
+    myChart.update();
+}
+
+// --- 辅助功能 ---
+
+function showNotification(text, isError=false) {
+    const notification = document.getElementById('notification');
+    notification.innerText = text;
+    notification.style.background = isError 
+        ? 'linear-gradient(135deg, #ef4444, #b91c1c)' 
+        : 'linear-gradient(135deg, #10b981, #059669)';
+    notification.style.display = 'block';
+    
+    // 简单的淡入动画
+    notification.style.opacity = '0';
+    notification.style.transition = 'opacity 0.5s';
+    setTimeout(() => notification.style.opacity = '1', 10);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.style.display = 'none', 500);
+    }, 3000);
+}
+
+function showError(message) {
+    document.getElementById('errorText').innerText = message;
+    document.getElementById('errorModal').style.display = 'flex';
+}
+
+function closeError() {
+    document.getElementById('errorModal').style.display = 'none';
+}
+
+function clearTable() {
+    document.getElementById('resultTable').innerHTML = '';
+    predictionStats = { positive: 0, negative: 0 };
+    updateChartAndStats();
+}
+
+function clearInput() {
+    document.getElementById('sequence').value = '';
+}
+</script>
+
+<style>
+/* 自定义滚动条 */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #1a1a1a; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #444; 
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+</style>
+
+</body>
+</html>
