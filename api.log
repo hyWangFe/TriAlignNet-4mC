@@ -1,0 +1,46 @@
+Loading model on cpu...
+C:\Users\yyp\Documents\code\api.py:136: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  state_dict = torch.load(args.model_path, map_location=args.device)
+Model weights loaded successfully.
+C:\Users\yyp\Documents\code\api.py:146: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  THRESHOLD = float(np.load(args.threshold_path_bal))
+Loaded Balanced Threshold: 0.49799999594688416
+Starting server on port 12345...
+ * Serving Flask app 'api'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:12345
+ * Running on http://192.168.100.200:12345
+Press CTRL+C to quit
+192.168.100.1 - - [01/Jun/2026 23:24:22] "GET /test_connection HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:22] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:22] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:24] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:27] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:27] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:28] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:29] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:32] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:38] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:38] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:43] "GET /test_connection HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:45] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:47] "GET /test_connection HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:49] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:49] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:51] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:53] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:57] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:57] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:24:59] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:25:00] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:25:02] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:25:03] "OPTIONS /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:25:04] "POST /predict HTTP/1.1" 200 -
+192.168.100.1 - - [01/Jun/2026 23:25:05] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 23:25:16] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 23:25:16] "GET /test_connection HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 23:25:18] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 23:25:20] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 23:25:22] "POST /predict HTTP/1.1" 200 -
